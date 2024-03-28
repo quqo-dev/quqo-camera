@@ -7,6 +7,8 @@ import "package:permission_handler/permission_handler.dart";
 import "package:photo_manager/photo_manager.dart";
 import "package:photo_manager_image_provider/photo_manager_image_provider.dart";
 
+const String noPermissionException = "noPermissionException";
+
 class CameraPage extends StatefulWidget {
   const CameraPage({Key? key}) : super(key: key);
 
@@ -18,13 +20,13 @@ class _CameraPageState extends State<CameraPage>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   CameraController? controller;
   List<CameraDescription> _cameras = <CameraDescription>[];
-  AssetPathEntity? _path;
   List<AssetEntity>? _entities;
-  final FilterOptionGroup _filterOptionGroup = FilterOptionGroup(
-    imageOption: const FilterOption(
-      sizeConstraint: SizeConstraint(ignoreSize: true),
-    ),
-  );
+  // AssetPathEntity? _path;
+  // final FilterOptionGroup _filterOptionGroup = FilterOptionGroup(
+  //   imageOption: const FilterOption(
+  //     sizeConstraint: SizeConstraint(ignoreSize: true),
+  //   ),
+  // );
 
   @override
   void initState() {
@@ -52,60 +54,74 @@ class _CameraPageState extends State<CameraPage>
     final CameraController? cameraController = controller;
 
     // App state changed before we got the chance to initialize.
-    if (cameraController == null || !cameraController.value.isInitialized) {
+    if ((cameraController == null || !cameraController.value.isInitialized) &&
+        _cameras.isEmpty) {
       return;
     }
 
     if (state == AppLifecycleState.inactive) {
-      cameraController.dispose();
+      cameraController?.dispose();
     } else if (state == AppLifecycleState.resumed) {
-      _initializeCameraController(cameraController.description);
+      _initializeCameraController(cameraController?.description ?? _cameras[0]);
     }
   }
 
-  Future<void> _requestAssets() async {
-    // Request permissions.
-    // final PermissionState ps = await PhotoManager.requestPermissionExtend();
-    final PermissionStatus status = await Permission.storage.status;
-    if (status.isDenied) {
-      await Permission.storage.request();
-    }
+  // Future<void> _requestAssets() async {
+  //   await <Permission>[
+  //     Permission.storage,
+  //   ].request();
 
-    if (!mounted) {
-      return;
-    }
+  //   await Permission.storage.request();
 
-    // Further requests can be only proceed with authorized or limited.
-    // if (!ps.hasAccess) {
-    //   return;
-    // }
+  //   if (!mounted) {
+  //     return;
+  //   }
 
-    final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
-      onlyAll: true,
-      filterOption: _filterOptionGroup,
-    );
-    _path = paths.first;
+  //   // Further requests can be only proceed with authorized or limited.
+  //   // if (!ps.hasAccess) {
+  //   //   return;
+  //   // }
 
-    final List<AssetEntity> entities = await _path!.getAssetListPaged(
-      page: 0,
-      size: 8,
-    );
+  //   final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
+  //     onlyAll: true,
+  //     filterOption: _filterOptionGroup,
+  //   );
+  //   _path = paths.first;
 
-    if (!mounted) {
-      return;
-    }
+  //   final List<AssetEntity> entities = await _path!.getAssetListPaged(
+  //     page: 0,
+  //     size: 8,
+  //   );
 
-    setState(() {
-      _entities = entities;
-    });
-  }
+  //   if (!mounted) {
+  //     return;
+  //   }
+
+  //   setState(() {
+  //     _entities = entities;
+  //   });
+  // }
 
   Future<void> _initializeCameraController(
     CameraDescription cameraDescription,
   ) async {
-    final PermissionStatus status = await Permission.camera.status;
-    if (status.isDenied) {
-      await Permission.camera.request().isGranted;
+    PermissionStatus cameraPermission = await Permission.camera.status;
+    PermissionStatus microPhonePermission = await Permission.microphone.status;
+
+    if (cameraPermission.isPermanentlyDenied ||
+        microPhonePermission.isPermanentlyDenied) {
+      await openAppSettings();
+    } else if (!cameraPermission.isGranted || !microPhonePermission.isGranted) {
+      await <Permission>[Permission.camera, Permission.microphone].request();
+    }
+
+    cameraPermission = await Permission.camera.status;
+    microPhonePermission = await Permission.microphone.status;
+
+    if (!cameraPermission.isGranted || !cameraPermission.isGranted) {
+      if (mounted) {
+        Navigator.pop(context, noPermissionException);
+      }
     }
 
     final CameraController cameraController = CameraController(
