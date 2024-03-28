@@ -105,23 +105,30 @@ class _CameraPageState extends State<CameraPage>
   Future<void> _initializeCameraController(
     CameraDescription cameraDescription,
   ) async {
+    bool isOpenSetting = false;
     PermissionStatus cameraPermission = await Permission.camera.status;
     PermissionStatus microPhonePermission = await Permission.microphone.status;
 
     if (cameraPermission.isPermanentlyDenied ||
         microPhonePermission.isPermanentlyDenied) {
       await openAppSettings();
+      isOpenSetting = true;
     } else if (!cameraPermission.isGranted || !microPhonePermission.isGranted) {
-      await <Permission>[Permission.camera, Permission.microphone].request();
+      try {
+        await <Permission>[Permission.camera, Permission.microphone].request();
+      } catch (e) {
+        Navigator.pop(context, noPermissionException);
+        return;
+      }
     }
 
     cameraPermission = await Permission.camera.status;
     microPhonePermission = await Permission.microphone.status;
 
-    if (!cameraPermission.isGranted || !cameraPermission.isGranted) {
-      if (mounted) {
-        Navigator.pop(context, noPermissionException);
-      }
+    if ((!cameraPermission.isGranted || !cameraPermission.isGranted) &&
+        !isOpenSetting) {
+      Navigator.pop(context, noPermissionException);
+      return;
     }
 
     final CameraController cameraController = CameraController(
