@@ -46,6 +46,7 @@ class _CameraPageState extends State<CameraPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    controller?.dispose();
     super.dispose();
   }
 
