@@ -193,17 +193,20 @@ class _CameraPageState extends State<CameraPage>
     final CameraController? cameraController = controller;
 
     if (cameraController == null || !cameraController.value.isInitialized) {
-      return const Text(
-        "No camera avaiable",
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 24.0,
-          fontWeight: FontWeight.w900,
+      return const SizedBox();
+    } else {
+      final Size size = MediaQuery.of(context).size;
+      return SizedBox(
+        width: size.width,
+        height: size.height,
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: 100, // the actual width is not important here
+            child: CameraPreview(controller!),
+          ),
         ),
       );
-    } else {
-      // return CameraPreview(controller!);
-      return CameraPreview(controller!);
     }
   }
 
@@ -233,66 +236,24 @@ class _CameraPageState extends State<CameraPage>
       onNewCameraSelected(description);
     }
 
-    return Expanded(
-      child: Container(
-        color: Colors.grey[200],
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 38),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              if (_cameras.length > 1)
-                GestureDetector(
-                  onTap: () {
-                    final CameraDescription newDescription =
-                        controller!.description == _cameras[0]
-                            ? _cameras[1]
-                            : _cameras[0];
-                    onChanged(newDescription);
-                  },
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.cameraswitch_outlined,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                    ),
-                  ),
-                ),
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 30,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            if (_cameras.length > 1)
               GestureDetector(
-                onTap: onTakePictureButtonPressed,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.black.withOpacity(0.2),
-                      size: 45,
-                    ),
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () async {
-                  final ImagePicker picker = ImagePicker();
-                  final XFile? imagexFile = await picker.pickImage(
-                    source: ImageSource.gallery,
-                  );
-
-                  if (imagexFile != null) Navigator.pop(context, imagexFile);
+                onTap: () {
+                  final CameraDescription newDescription =
+                      controller!.description == _cameras[0]
+                          ? _cameras[1]
+                          : _cameras[0];
+                  onChanged(newDescription);
                 },
                 child: Container(
                   width: 50,
@@ -303,15 +264,57 @@ class _CameraPageState extends State<CameraPage>
                   ),
                   child: const Center(
                     child: Icon(
-                      Icons.image_outlined,
+                      Icons.cameraswitch_outlined,
                       color: Colors.white,
                       size: 26,
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            GestureDetector(
+              onTap: onTakePictureButtonPressed,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.camera_alt_rounded,
+                    color: Colors.black.withOpacity(0.2),
+                    size: 45,
+                  ),
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () async {
+                final ImagePicker picker = ImagePicker();
+                final XFile? imagexFile = await picker.pickImage(
+                  source: ImageSource.gallery,
+                );
+
+                if (imagexFile != null) Navigator.pop(context, imagexFile);
+              },
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.image_outlined,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -361,9 +364,9 @@ class _CameraPageState extends State<CameraPage>
               _cameraPreviewWidget(),
               _galleryList(),
               _backButton(),
+              _actionRow(),
             ],
           ),
-          _actionRow(),
         ],
       ),
     );
